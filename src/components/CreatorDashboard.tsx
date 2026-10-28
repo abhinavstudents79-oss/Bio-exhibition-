@@ -11,10 +11,11 @@ import {
   EXTRA_PHYSICAL_ITEMS,
 } from '../data/presets';
 import {
-  AutoReportBarcode,
   DefaultClubEmblemSvg,
   DefaultSchoolCrestSvg,
 } from './ClinicalGraphics';
+import { BarcodeScannerCorner } from './BarcodeScannerCorner';
+import { exportReportToLocalFile } from '../utils/localReportStorage';
 import {
   Plus,
   Trash2,
@@ -25,18 +26,22 @@ import {
   Sparkles,
   Eraser,
   Calculator,
-  Barcode,
   FileCheck2,
   Calendar,
   Hash,
   RotateCcw,
   Layers,
+  Save,
 } from 'lucide-react';
 
 interface CreatorDashboardProps {
   report: PathologyReport;
+  vault: PathologyReport[];
   onChange: (updated: PathologyReport) => void;
   onGenerateReport: () => void;
+  onLoadReportFromScan: (loaded: PathologyReport, message: string) => void;
+  onSaveCurrentToVault: () => void;
+  onVaultChange: (updatedVault: PathologyReport[]) => void;
   isGenerating: boolean;
 }
 
@@ -75,8 +80,12 @@ const THEME_OPTIONS = [
 
 export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
   report,
+  vault,
   onChange,
   onGenerateReport,
+  onLoadReportFromScan,
+  onSaveCurrentToVault,
+  onVaultChange,
   isGenerating,
 }) => {
   const clubInputRef = useRef<HTMLInputElement | null>(null);
@@ -406,28 +415,15 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
             />
           </div>
 
-          {/* Right: Live Auto-Barcode Preview + Generate Report CTA */}
-          <div className="md:col-span-4 flex flex-col justify-between gap-2.5 p-3.5 rounded-lg bg-slate-900 text-white">
-            <div className="flex items-start justify-between gap-2">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
-                  <Barcode className="w-3.5 h-3.5" />
-                  Live Auto-Barcode
-                </div>
-                <p className="text-[11px] text-slate-300 leading-snug">
-                  Encodes Report No. & Patient ID onto the A4 sheet.
-                </p>
-              </div>
-              <AutoReportBarcode report={report} widthPx={116} heightPx={24} />
-            </div>
-            <button
-              type="button"
-              onClick={onGenerateReport}
-              className="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2 min-h-[38px] text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded-md transition-colors whitespace-nowrap"
-            >
-              <FileCheck2 className="w-3.5 h-3.5" />
-              {isGenerating ? 'Generating...' : 'Generate A4 Report →'}
-            </button>
+          {/* Top-Right Corner of Dashboard: Barcode Scanner & Local File Vault */}
+          <div className="md:col-span-4">
+            <BarcodeScannerCorner
+              currentReport={report}
+              vault={vault}
+              onLoadReportFromScan={onLoadReportFromScan}
+              onSaveCurrentToVault={onSaveCurrentToVault}
+              onVaultChange={onVaultChange}
+            />
           </div>
         </div>
 
@@ -1064,14 +1060,28 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
             ))}
           </div>
 
-          <button
-            type="button"
-            onClick={onGenerateReport}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[46px] text-sm font-display font-bold text-white bg-[#005493] hover:bg-[#003f70] rounded-lg shadow-md transition-transform active:scale-98"
-          >
-            <FileCheck2 className="w-4 h-4" />
-            Generate A4 Report & Barcode →
-          </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => {
+                onSaveCurrentToVault();
+                exportReportToLocalFile(report);
+              }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-3 min-h-[46px] text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors"
+            >
+              <Save className="w-4 h-4 text-blue-700" />
+              Save Report to Local File (.json)
+            </button>
+
+            <button
+              type="button"
+              onClick={onGenerateReport}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[46px] text-sm font-display font-bold text-white bg-[#005493] hover:bg-[#003f70] rounded-lg shadow-md transition-transform active:scale-98"
+            >
+              <FileCheck2 className="w-4 h-4" />
+              {isGenerating ? 'Generating...' : 'Generate A4 Report & Save →'}
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>

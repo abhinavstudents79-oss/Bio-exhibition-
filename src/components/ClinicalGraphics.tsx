@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Upload } from 'lucide-react';
 import { PathologyReport } from '../types/pathology';
+import { encodeCode39Modules } from '../utils/localReportStorage';
 
 export const DefaultClubEmblemSvg: React.FC<{
   accentColor: string;
@@ -221,66 +222,32 @@ export const ClubWatermarkOverlay: React.FC<{
 };
 
 /**
- * Auto-Generated Linear Code-128 Style Barcode driven by live Report Data
+ * Auto-Generated Standard ISO Code-39 Scannable Linear Barcode driven by live Report Data
  */
 export const AutoReportBarcode: React.FC<{
   report: PathologyReport;
   widthPx?: number;
   heightPx?: number;
-}> = ({ report, widthPx = 158, heightPx = 32 }) => {
-  const codeText = (report.patient.reportNo || 'REP-2026-101')
-    .trim()
-    .toUpperCase();
-  const seedString = `${codeText}|${report.patient.patientName || 'PATIENT'}|${
-    report.patient.date || ''
-  }`;
-
-  // Generate deterministic Code-128 style bar/space widths from seedString
-  const modules: Array<{ isBar: boolean; width: number }> = [
-    // Start Code B guard pattern
-    { isBar: true, width: 2 },
-    { isBar: false, width: 1 },
-    { isBar: true, width: 1 },
-    { isBar: false, width: 2 },
-    { isBar: true, width: 1 },
-    { isBar: false, width: 2 },
-  ];
-
-  for (let i = 0; i < Math.max(10, codeText.length); i++) {
-    const ch = seedString.charCodeAt(i % seedString.length) + i * 19;
-    const w1 = (ch % 3) + 1;
-    const s1 = ((ch >> 2) % 2) + 1;
-    const w2 = ((ch >> 3) % 2) + 1;
-    const s2 = ((ch >> 4) % 2) + 1;
-    modules.push({ isBar: true, width: w1 });
-    modules.push({ isBar: false, width: s1 });
-    modules.push({ isBar: true, width: w2 });
-    modules.push({ isBar: false, width: s2 });
-  }
-
-  // Stop guard pattern
-  modules.push(
-    { isBar: true, width: 2 },
-    { isBar: false, width: 1 },
-    { isBar: true, width: 2 }
+}> = ({ report, widthPx = 164, heightPx = 32 }) => {
+  const { cleanCode, modules, totalUnits } = encodeCode39Modules(
+    report.patient.reportNo || 'REP-2026-101'
   );
 
-  const totalUnits = modules.reduce((acc, m) => acc + m.width, 0);
   let cursor = 0;
 
   return (
     <div
       className="inline-flex flex-col items-center bg-white px-2.5 py-1.5 rounded border border-slate-300 shadow-2xs shrink-0"
-      title={`Auto-Generated Barcode: ${codeText}`}
+      title={`Scannable Code-39 Barcode: *${cleanCode}*`}
     >
       <svg
         width={widthPx}
         height={heightPx}
-        viewBox={`0 0 ${totalUnits} 30`}
+        viewBox={`0 0 ${totalUnits} 32`}
         preserveAspectRatio="none"
         className="block"
       >
-        <rect width={totalUnits} height={30} fill="#FFFFFF" />
+        <rect width={totalUnits} height={32} fill="#FFFFFF" />
         {modules.map((mod, idx) => {
           const x = cursor;
           cursor += mod.width;
@@ -291,15 +258,16 @@ export const AutoReportBarcode: React.FC<{
               x={x}
               y={1}
               width={mod.width}
-              height={28}
-              fill="#0F172A"
+              height={30}
+              fill="#000000"
             />
           );
         })}
       </svg>
-      <span className="font-mono text-[9px] font-bold tracking-widest text-slate-700 mt-0.5 uppercase tabular-nums">
-        *{codeText}*
+      <span className="font-mono text-[9px] font-bold tracking-widest text-slate-800 mt-0.5 uppercase tabular-nums">
+        *{cleanCode}*
       </span>
     </div>
   );
 };
+

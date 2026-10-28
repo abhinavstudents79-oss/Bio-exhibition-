@@ -36,9 +36,16 @@ import {
   FolderKanban,
   Stamp,
   Save,
+  FolderDown,
 } from 'lucide-react';
+import {
+  ACTIVE_REPORT_STORAGE_KEY,
+  exportReportToLocalFile,
+  loadReportsVault,
+  upsertReportInVault,
+} from './utils/localReportStorage';
 
-const LOCAL_STORAGE_KEY = 'patholab_a4_saved_report_v2';
+const LOCAL_STORAGE_KEY = ACTIVE_REPORT_STORAGE_KEY;
 
 function loadInitialReportFromStorage(): PathologyReport {
   const fallback: PathologyReport = JSON.parse(
@@ -75,6 +82,9 @@ function loadInitialReportFromStorage(): PathologyReport {
 export default function App() {
   const [report, setReport] = useState<PathologyReport>(() =>
     loadInitialReportFromStorage()
+  );
+  const [vault, setVault] = useState<PathologyReport[]>(() =>
+    loadReportsVault()
   );
   const [viewMode, setViewMode] = useState<WorkspaceViewMode>(() =>
     typeof window !== 'undefined' && window.innerWidth >= 1280
@@ -155,15 +165,39 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
+  const handleSaveCurrentToVault = () => {
+    const nextVault = upsertReportInVault(report);
+    setVault(nextVault);
+    setExportStatusMessage(
+      `Saved *${report.patient.reportNo}* to Local Vault`
+    );
+    setTimeout(() => setExportStatusMessage(null), 2800);
+  };
+
+  const handleLoadReportFromScan = (
+    loaded: PathologyReport,
+    message: string
+  ) => {
+    setReport(JSON.parse(JSON.stringify(loaded)));
+    setExportStatusMessage(message);
+    if (viewMode === WorkspaceViewMode.DASHBOARD && window.innerWidth >= 1280) {
+      setViewMode(WorkspaceViewMode.SPLIT_STUDIO);
+    } else {
+      setViewMode(WorkspaceViewMode.A4_REPORT);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => setExportStatusMessage(null), 4000);
+  };
+
   const handleGenerateReportFromDashboard = () => {
     setIsGeneratingEffect(true);
-    setExportStatusMessage('Generating A4 Report & Barcode...');
+    setExportStatusMessage('Generating & Saving A4 Report + Barcode...');
     setReport((prev) => {
       const d = new Date();
       const todayStr = `${String(d.getDate()).padStart(2, '0')}/${String(
         d.getMonth() + 1
       ).padStart(2, '0')}/${d.getFullYear()}`;
-      return {
+      const nextReport: PathologyReport = {
         ...prev,
         patient: {
           ...prev.patient,
@@ -175,12 +209,15 @@ export default function App() {
         showBarcode: true,
         lastGeneratedAt: new Date().toLocaleTimeString(),
       };
+      const updatedVault = upsertReportInVault(nextReport);
+      setVault(updatedVault);
+      return nextReport;
     });
 
     setTimeout(() => {
       setIsGeneratingEffect(false);
       setViewMode(WorkspaceViewMode.A4_REPORT);
-      setExportStatusMessage('Report & Barcode Ready on A4');
+      setExportStatusMessage('Report Saved Locally & Ready on A4');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => setExportStatusMessage(null), 3200);
     }, 320);
@@ -534,6 +571,19 @@ export default function App() {
 
             <button
               type="button"
+              onClick={() => {
+                handleSaveCurrentToVault();
+                exportReportToLocalFile(report);
+              }}
+              title="Save current patient report to local .json file and local vault"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 whitespace-nowrap shrink-0"
+            >
+              <FolderDown className="w-3.5 h-3.5 text-emerald-400" />
+              Save Local File (.json)
+            </button>
+
+            <button
+              type="button"
               onClick={handleGenerateReportFromDashboard}
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] font-semibold bg-emerald-500 hover:bg-emerald-600 text-slate-950 whitespace-nowrap shrink-0"
             >
@@ -629,8 +679,12 @@ export default function App() {
             >
               <CreatorDashboard
                 report={report}
+                vault={vault}
                 onChange={setReport}
                 onGenerateReport={handleGenerateReportFromDashboard}
+                onLoadReportFromScan={handleLoadReportFromScan}
+                onSaveCurrentToVault={handleSaveCurrentToVault}
+                onVaultChange={setVault}
                 isGenerating={isGeneratingEffect}
               />
             </motion.div>
@@ -648,8 +702,12 @@ export default function App() {
               <div className="col-span-12 xl:col-span-5 no-print">
                 <CreatorDashboard
                   report={report}
+                  vault={vault}
                   onChange={setReport}
                   onGenerateReport={handleGenerateReportFromDashboard}
+                  onLoadReportFromScan={handleLoadReportFromScan}
+                  onSaveCurrentToVault={handleSaveCurrentToVault}
+                  onVaultChange={setVault}
                   isGenerating={isGeneratingEffect}
                 />
               </div>
