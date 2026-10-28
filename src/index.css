@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "Public Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: #E2E8F0;
+    color: #0F172A;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Exact A4 dimensions at 96 DPI: 210mm = 794px, 297mm = 1123px */
+.a4-sheet {
+  width: 794px;
+  min-height: 1123px;
+  background-color: #FFFFFF;
+  color: #0F172A;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.a4-website-column {
+  width: 794px;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Seamless inline editable input appearance */
+.inline-edit-input {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.inline-edit-input:hover {
+  border-color: #CBD5E1;
+  background-color: rgba(248, 250, 252, 0.8);
+}
+
+.inline-edit-input:focus {
+  outline: none;
+  border-color: #2563EB;
+  background-color: #EFF6FF;
+}
+
+/* Hide UI chrome during export or print */
+.exporting-pdf .no-export {
+  display: none !important;
+}
+
+.exporting-pdf .inline-edit-input {
+  border-color: transparent !important;
+  background-color: transparent !important;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    width: 210mm;
+    height: 297mm;
+    background: #FFFFFF !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print, .no-export {
+    display: none !important;
+  }
+
+  .a4-sheet {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+}

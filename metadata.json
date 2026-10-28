@@ -1,0 +1,6 @@
+{
+  "name": "PathoLab A4 — Clinical Pathology Report Creator",
+  "description": "Precision A4 clinical pathology report creator with inline manual editing, auto-flagging reference intervals, digital signatures, and instant A4 PDF export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
